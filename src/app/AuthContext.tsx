@@ -27,68 +27,103 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const token = apiService.getToken();
-    if (token) {
-      // Check if it's a valid recent token
-      const tokenTimestamp = token.split('-').pop();
-      const tokenAge = Date.now() - parseInt(tokenTimestamp || '0');
-      const isRecentToken = tokenAge < 7 * 24 * 60 * 60 * 1000; // 7 days
+    const initializeAuth = async () => {
+      // Clear any old mock tokens first
+      clearInvalidTokens();
 
-      if (token.startsWith('mock-jwt-token-') && isRecentToken) {
-        // Valid recent token - auto-login user
-        const mockUser = {
-          _id: '1',
-          username: 'DemoUser',
-          email: 'demo@example.com',
-          walletAddress: '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
-        };
-        setUser(mockUser);
-      } else {
-        // Old or invalid token - clear it
-        apiService.clearToken();
+      const token = apiService.getToken();
+      if (token) {
+        try {
+          // Validate token with backend
+          const profile = await apiService.getProfile();
+          if (profile.success && profile.user) {
+            setUser(profile.user);
+            console.log('Auto-login successful:', profile.user);
+          } else {
+            // Invalid token - clear it
+            console.log('Token validation failed - clearing token');
+            apiService.clearToken();
+          }
+        } catch (error: any) {
+          console.error('Token validation failed:', error);
+          // Clear invalid token
+          console.log('Clearing invalid token from localStorage');
+          apiService.clearToken();
+        }
       }
-    }
-    setIsLoading(false);
+      setIsLoading(false);
+    };
+
+    initializeAuth();
   }, []);
 
   const login = async (email: string, password: string) => {
-    // Mock authentication for demo purposes
-    if (email && password) {
-      const mockUser = {
-        _id: '1',
-        username: email.split('@')[0],
-        email: email,
-        walletAddress: '0x' + Math.random().toString(16).substr(2, 40),
-      };
-      const mockToken = 'mock-jwt-token-' + Date.now();
-      apiService.setToken(mockToken);
-      setUser(mockUser);
-    } else {
-      throw new Error('Invalid credentials');
+    try {
+      console.log('Login attempt:', { email, password });
+      const response = await apiService.login(email, password);
+      console.log('Login response:', response);
+
+      if (response.success && response.user) {
+        setUser(response.user);
+        console.log('Login successful, user set:', response.user);
+      } else {
+        throw new Error('Login failed');
+      }
+    } catch (error: any) {
+      console.error('Login error:', error);
+      throw new Error(error.message || 'Login failed. Please check your credentials.');
     }
   };
 
   const register = async (username: string, email: string, password: string) => {
-    // Mock registration for demo purposes
-    if (username && email && password) {
-      const mockUser = {
-        _id: '1',
-        username: username,
-        email: email,
-        walletAddress: '0x' + Math.random().toString(16).substr(2, 40),
-      };
-      const mockToken = 'mock-jwt-token-' + Date.now();
-      apiService.setToken(mockToken);
-      setUser(mockUser);
-    } else {
-      throw new Error('All fields are required');
+    try {
+      console.log('Registration attempt:', { username, email });
+      const response = await apiService.register(username, email, password);
+      console.log('Registration response:', response);
+
+      if (response.success && response.user) {
+        setUser(response.user);
+        console.log('Registration successful, user set:', response.user);
+      } else {
+        throw new Error('Registration failed');
+      }
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      throw new Error(error.message || 'Registration failed. Please try again.');
     }
   };
 
   const logout = () => {
     apiService.clearToken();
     setUser(null);
+    // Also clear any other auth-related data
+    localStorage.removeItem('authToken');
+    console.log('Logged out and cleared all auth data');
   };
+
+  // Clear any invalid tokens on app start
+  const clearInvalidTokens = () => {
+    const token = localStorage.getItem('authToken');
+    if (token && token.startsWith('mock-jwt-token-')) {
+      console.log('Clearing old mock token');
+      localStorage.removeItem('authToken');
+      apiService.clearToken();
+    }
+  };
+
+  // Manual token clearing function (accessible from browser console)
+  const clearAllTokens = () => {
+    console.log('Manually clearing all tokens...');
+    localStorage.removeItem('authToken');
+    apiService.clearToken();
+    setUser(null);
+    console.log('All tokens cleared. Please refresh the page.');
+  };
+
+  // Make clearAllTokens available globally for debugging
+  if (typeof window !== 'undefined') {
+    (window as any).clearAllTokens = clearAllTokens;
+  }
 
   const value = {
     user,

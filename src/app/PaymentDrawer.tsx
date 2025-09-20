@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { useWallets, useCurrentAccount, useSignTransaction } from '@mysten/dapp-kit';
+import { Transaction } from '@mysten/sui/transactions';
 import { paymentService } from './paymentService';
 
 interface PaymentDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  type: 'request' | 'paid';
+  type: 'request' | 'paid' | 'send';
   onSubmit: (paymentData: {
     amount: number;
     currency: string;
@@ -19,14 +20,24 @@ interface PaymentDrawerProps {
 export default function PaymentDrawer({ isOpen, onClose, type, onSubmit }: PaymentDrawerProps) {
   const wallets = useWallets();
   const currentAccount = useCurrentAccount();
-  const signTransaction = useSignTransaction();
+  const { mutateAsync: signTransaction } = useSignTransaction();
   const [amount, setAmount] = useState('');
   const [receiverWallet, setReceiverWallet] = useState('');
   const [currency, setCurrency] = useState<'NGN' | 'SUI' | 'USDC'>('NGN');
   const [paymentMethod, setPaymentMethod] = useState<'bank' | 'crypto'>('bank');
+
+  // Update currency when payment method changes
+  const handlePaymentMethodChange = (method: 'bank' | 'crypto') => {
+    setPaymentMethod(method);
+    if (method === 'crypto') {
+      setCurrency('SUI'); // Default to SUI for crypto
+    } else {
+      setCurrency('NGN'); // Default to NGN for bank
+    }
+  };
   const [loading, setLoading] = useState(false);
 
-  const title = type === 'request' ? 'Request Payment' : 'Mark as Paid';
+  const title = type === 'request' ? 'Receive Payment' : type === 'send' ? 'Send Payment' : 'Mark as Paid';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,31 +51,128 @@ export default function PaymentDrawer({ isOpen, onClose, type, onSubmit }: Payme
           receiverDetails: receiverWallet || 'Bank transfer details collected'
         };
 
-        // Create payment request through the service
-        let result;
+        console.log('📋 Payment Data:', paymentData);
+        console.log('💰 Payment Method:', paymentMethod);
+        console.log('🪙 Selected Currency:', currency);
+        console.log('👛 Receiver Wallet:', receiverWallet);
+
+        // Create payment through the service
+        let result: { success: boolean; paymentId?: string; transactionHash?: string; error?: string } | undefined;
         if (paymentMethod === 'crypto') {
           if (!currentAccount) {
             alert('Please connect your Sui wallet first');
             return;
           }
-          result = await paymentService.createCryptoPaymentRequest({
-            id: `payment_${Date.now()}`,
-            ...paymentData,
-            description: `Payment request for ${amount} ${currency}`,
-          }, signTransaction);
+
+          // Convert amount to smallest unit (needed for both send and receive)
+          const decimals = currency === 'SUI' ? 9 : currency === 'USDC' ? 6 : 2;
+          const amountInSmallestUnit = Math.floor(parseFloat(amount) * Math.pow(10, decimals));
+
+          // Validate amount against contract limits
+          const minAmounts = { SUI: 1000000, USDC: 1000000, NGN: 10000 };
+          const maxAmounts = { SUI: 1000000000000, USDC: 1000000000000, NGN: 1000000000 };
+
+          console.log(`Converted amount: ${amountInSmallestUnit} (${currency} in smallest units)`);
+
+          if (amountInSmallestUnit < minAmounts[currency as keyof typeof minAmounts]) {
+            alert(`Amount too small. Minimum for ${currency} is ${(minAmounts[currency as keyof typeof minAmounts] / Math.pow(10, decimals)).toFixed(decimals === 9 ? 3 : decimals === 6 ? 2 : 0)} ${currency}`);
+            return;
+          }
+          if (amountInSmallestUnit > maxAmounts[currency as keyof typeof maxAmounts]) {
+            alert(`Warning: Amount is large. Maximum recommended for ${currency} is ${(maxAmounts[currency as keyof typeof maxAmounts] / Math.pow(10, decimals)).toFixed(decimals === 9 ? 3 : decimals === 6 ? 2 : 0)} ${currency}. Transaction may still proceed but could fail.`);
+            // Don't return, allow the transaction to proceed
+          }
+
+          if (type === 'send') {
+            // For sending crypto payment
+            if (currency === 'USDC') {
+              alert('Sending USDC is not yet implemented. Use SUI for now.');
+              return;
+            }
+
+            const txb = new Transaction();
+            txb.setSender(currentAccount.address);
+            txb.setGasBudget(100000000); // 0.1 SUI gas budget
+
+            // Split the amount from gas coin and transfer
+            const [coin] = txb.splitCoins(txb.gas, [txb.pure.u64(amountInSmallestUnit)]);
+            txb.transferObjects([coin], txb.pure.address(receiverWallet));
+
+            console.log('Sending transaction...');
+
+            try {
+              const txResult = await signTransaction({ transaction: txb });
+              console.log('🎉 Send transaction successful:', txResult);
+              result = {
+                success: true,
+                paymentId: (txResult as any).digest || `send_${Date.now()}`,
+                transactionHash: (txResult as any).digest
+              };
+            } catch (error: any) {
+              console.log('❌ Send transaction failed:', error);
+              result = {
+                success: false,
+                error: `Send failed: ${error.message || String(error)}`
+              };
+            }
+          } else {
+            // For receiving payment - create payment request on blockchain
+            const packageId = process.env.NEXT_PUBLIC_CHATPAY_PACKAGE_ID || '0xcf86d7db1cb98dbbfe169c470ab2d120688860b6daf6023de5e724b279aa46a6';
+            const chatPayObjectId = process.env.NEXT_PUBLIC_CHATPAY_OBJECT_ID || '0x7546734271f7a10d5c40be476f4121ef71fc0b4309095da9180788e6f8d982e9';
+
+            const txb = new Transaction();
+            txb.setSender(currentAccount.address);
+            txb.setGasBudget(100000000); // 0.1 SUI gas budget for larger transactions
+
+            txb.moveCall({
+              target: `${packageId}::blockchainpayment::create_payment_request`,
+              arguments: [
+                txb.object(chatPayObjectId),
+                txb.pure.address(receiverWallet),
+                txb.pure.u64(amountInSmallestUnit),
+                txb.pure.string(currency),
+                txb.pure.string('crypto'),
+                txb.pure.string(`Payment request for ${amount} ${currency}`),
+                txb.pure.string(''),
+                txb.pure.string(''),
+                txb.pure.string(''),
+              ],
+            });
+
+            console.log('Submitting transaction directly...');
+
+            // Use signTransaction with promise
+            try {
+              const txResult = await signTransaction({ transaction: txb });
+              console.log('🎉 Transaction successful:', txResult);
+              result = {
+                success: true,
+                paymentId: (txResult as any).digest || `payment_${Date.now()}`,
+                transactionHash: (txResult as any).digest
+              };
+            } catch (error: any) {
+              console.log('❌ Transaction failed:', error);
+              result = {
+                success: false,
+                error: `Transaction failed: ${error.message || String(error)}`
+              };
+            }
+          }
         } else {
-          result = await paymentService.createFiatPaymentRequest({
-            id: `payment_${Date.now()}`,
-            ...paymentData,
-            description: `Payment request for ₦${amount}`,
-          });
+          // For fiat payments, just return success for now
+          // In a real implementation, this would integrate with payment providers
+          result = {
+            success: true,
+            paymentId: `fiat_${Date.now()}`,
+            transactionHash: `fiat_tx_${Date.now()}`
+          };
         }
 
-        if (result.success) {
+        if (result && result.success) {
           onSubmit(paymentData);
           handleClose();
         } else {
-          alert(`Payment request failed: ${result.error}`);
+          alert(`Payment request failed: ${result?.error || 'Unknown error'}`);
         }
       } catch (error) {
         console.error('Payment submission error:', error);
@@ -78,8 +186,8 @@ export default function PaymentDrawer({ isOpen, onClose, type, onSubmit }: Payme
   const handleClose = () => {
     setAmount('');
     setReceiverWallet('');
-    setCurrency('NGN');
     setPaymentMethod('bank');
+    setCurrency('NGN'); // This will be auto-set by handlePaymentMethodChange, but we set it explicitly for clarity
     onClose();
   };
 
@@ -135,7 +243,7 @@ export default function PaymentDrawer({ isOpen, onClose, type, onSubmit }: Payme
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
-                  onClick={() => setPaymentMethod('bank')}
+                  onClick={() => handlePaymentMethodChange('bank')}
                   className={`p-3 border rounded-lg text-center transition duration-200 ${
                     paymentMethod === 'bank'
                       ? 'border-green-500 bg-green-50 text-green-700'
@@ -148,7 +256,7 @@ export default function PaymentDrawer({ isOpen, onClose, type, onSubmit }: Payme
                 </button>
                 <button
                   type="button"
-                  onClick={() => setPaymentMethod('crypto')}
+                  onClick={() => handlePaymentMethodChange('crypto')}
                   className={`p-3 border rounded-lg text-center transition duration-200 ${
                     paymentMethod === 'crypto'
                       ? 'border-green-500 bg-green-50 text-green-700'
@@ -198,7 +306,10 @@ export default function PaymentDrawer({ isOpen, onClose, type, onSubmit }: Payme
 
             <div>
               <label htmlFor="receiverWallet" className="block text-sm font-medium text-gray-700 mb-2">
-                {paymentMethod === 'crypto' ? 'Receiver Wallet Address' : 'Bank Account Details'}
+                {paymentMethod === 'crypto'
+                  ? (type === 'send' ? 'Recipient Wallet Address' : 'Your Wallet Address')
+                  : 'Bank Account Details'
+                }
               </label>
               {paymentMethod === 'crypto' ? (
                 <input
@@ -261,7 +372,10 @@ export default function PaymentDrawer({ isOpen, onClose, type, onSubmit }: Payme
                 disabled={loading}
                 className="flex-1 px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? 'Processing...' : (type === 'request' ? 'Send Request' : 'Mark as Paid')}
+                {loading ? 'Processing...' :
+                  type === 'send' ? 'Send Payment' :
+                  type === 'request' ? 'Create Receivable' : 'Mark as Paid'
+                }
               </button>
             </div>
           </form>

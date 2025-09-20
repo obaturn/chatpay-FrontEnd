@@ -1,6 +1,6 @@
 // API service for ChatPay application
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 class ApiService {
   private token: string | null = null;
@@ -43,7 +43,15 @@ class ApiService {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: 'Network error' }));
-      throw new Error(error.message || `HTTP ${response.status}`);
+
+      // Handle specific HTTP status codes
+      if (response.status === 401) {
+        // Clear invalid token on 401 Unauthorized
+        this.clearToken();
+        throw new Error('Authentication failed. Please log in again.');
+      }
+
+      throw new Error(error.message || `HTTP ${response.status}: ${response.statusText}`);
     }
 
     return response.json();

@@ -12,14 +12,19 @@ export default function LoginForm({ onLogin, onSwitchToRegister, onBackToHome }:
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
     try {
       await onLogin(email, password);
-    } catch (error) {
+      setError(''); // Clear any previous errors
+      // Login successful - the parent component will handle navigation
+    } catch (error: any) {
       console.error('Login error:', error);
+      setError(error.message || 'Login failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -38,6 +43,12 @@ export default function LoginForm({ onLogin, onSwitchToRegister, onBackToHome }:
           <h1 className="text-3xl font-bold text-purple-800 mb-2">ChatPay</h1>
           <p className="text-purple-600">Sign in to your account</p>
         </div>
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+            <p className="text-red-800 text-sm">{error}</p>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>

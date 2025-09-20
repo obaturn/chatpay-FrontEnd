@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './AuthContext';
 import LandingPage from './LandingPage';
 import LoginForm from './LoginForm';
@@ -110,6 +110,9 @@ function ChatInterface() {
       }
     }, 500); // Increased delay to give modal time to render
   };
+  const [showTransactionHistory, setShowTransactionHistory] = useState(false);
+  const [transactions, setTransactions] = useState<any[]>([]);
+
   const [messages, setMessages] = useState<MessageType[]>([
     {
       id: '1',
@@ -142,7 +145,7 @@ function ChatInterface() {
   ]);
   const [newMessage, setNewMessage] = useState('');
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [drawerType, setDrawerType] = useState<'request' | 'paid'>('request');
+  const [drawerType, setDrawerType] = useState<'request' | 'paid' | 'send'>('request');
 
   // Mock chat data
   const chats = [
@@ -205,29 +208,75 @@ function ChatInterface() {
     paymentMethod: string;
     receiverDetails: string;
   }) => {
-    if (drawerType === 'request') {
+    const transactionId = Date.now().toString();
+    const timestamp = new Date().toLocaleTimeString();
+
+    if (drawerType === 'send') {
+      // Add to transaction history
+      const transaction = {
+        id: transactionId,
+        type: 'outgoing',
+        amount: paymentData.amount,
+        currency: paymentData.currency,
+        recipient: paymentData.receiverDetails,
+        timestamp: new Date().toLocaleString(),
+        status: 'completed',
+        txHash: `0x${Math.random().toString(16).substr(2, 64)}`,
+        method: paymentData.paymentMethod
+      };
+      setTransactions(prev => [transaction, ...prev]);
+
       const message: MessageType = {
-        id: Date.now().toString(),
-        text: `Payment Request: ${paymentData.currency} ${paymentData.amount} via ${paymentData.paymentMethod}`,
-        timestamp: new Date().toLocaleTimeString(),
+        id: transactionId,
+        text: `💸 Sent ${paymentData.currency} ${paymentData.amount} to ${paymentData.receiverDetails.slice(0, 6)}...${paymentData.receiverDetails.slice(-4)}`,
+        timestamp: timestamp,
         payment: {
-          id: Date.now().toString(),
+          id: transactionId,
           type: 'request',
           amount: paymentData.amount,
           receiverWallet: paymentData.receiverDetails,
           status: 'verified',
-          txHash: `0x${Math.random().toString(16).substr(2, 64)}`,
+          txHash: transaction.txHash,
+        }
+      };
+      setMessages([...messages, message]);
+    } else if (drawerType === 'request') {
+      // Add to transaction history
+      const transaction = {
+        id: transactionId,
+        type: 'receivable',
+        amount: paymentData.amount,
+        currency: paymentData.currency,
+        recipient: 'Your Wallet',
+        timestamp: new Date().toLocaleString(),
+        status: 'pending',
+        txHash: `0x${Math.random().toString(16).substr(2, 64)}`,
+        method: paymentData.paymentMethod
+      };
+      setTransactions(prev => [transaction, ...prev]);
+
+      const message: MessageType = {
+        id: transactionId,
+        text: `📋 Created receivable: ${paymentData.currency} ${paymentData.amount}`,
+        timestamp: timestamp,
+        payment: {
+          id: transactionId,
+          type: 'request',
+          amount: paymentData.amount,
+          receiverWallet: paymentData.receiverDetails,
+          status: 'verified',
+          txHash: transaction.txHash,
         }
       };
       setMessages([...messages, message]);
     } else {
       // For mark as paid
       const message: MessageType = {
-        id: Date.now().toString(),
-        text: `Marked as Paid: ${paymentData.currency} ${paymentData.amount} via ${paymentData.paymentMethod}`,
-        timestamp: new Date().toLocaleTimeString(),
+        id: transactionId,
+        text: `✅ Marked as Paid: ${paymentData.currency} ${paymentData.amount}`,
+        timestamp: timestamp,
         payment: {
-          id: Date.now().toString(),
+          id: transactionId,
           type: 'manual',
           paymentMethod: paymentData.paymentMethod,
           referenceId: paymentData.amount.toString(),
@@ -343,10 +392,6 @@ function ChatInterface() {
                 />
               ))}
 
-              {/* Test Panel */}
-              <div className="mt-8">
-                <TestContract />
-              </div>
 
               {/* Wallet Debug Panel */}
               {showWalletDebug && (
@@ -409,21 +454,29 @@ function ChatInterface() {
               </button>
               <button
                 onClick={() => {
+                  setDrawerType('send');
+                  setDrawerOpen(true);
+                }}
+                className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-full transition duration-200"
+              >
+                Send
+              </button>
+              <button
+                onClick={() => {
                   setDrawerType('request');
                   setDrawerOpen(true);
                 }}
                 className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-full transition duration-200"
               >
-                Request
+                Receive
               </button>
               <button
                 onClick={() => {
-                  setDrawerType('paid');
-                  setDrawerOpen(true);
+                  setShowTransactionHistory(true);
                 }}
                 className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-4 rounded-full transition duration-200"
               >
-                Paid
+                💳 History
               </button>
               <button
                 onClick={handleSendMessage}
@@ -450,16 +503,127 @@ function ChatInterface() {
         type={drawerType}
         onSubmit={handleDrawerSubmit}
       />
+
+      {/* Transaction History Drawer */}
+      {showTransactionHistory && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full max-h-[80vh] overflow-hidden">
+            <div className="bg-gradient-to-r from-emerald-600 to-green-600 text-white p-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold">💳 Transaction History</h2>
+                <button
+                  onClick={() => setShowTransactionHistory(false)}
+                  className="text-white hover:text-green-200 p-2 rounded-full hover:bg-green-700"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 overflow-y-auto max-h-[60vh]">
+              {transactions.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="text-6xl mb-4">💳</div>
+                  <p className="text-gray-500 mb-2">No transactions yet</p>
+                  <p className="text-sm text-gray-400">Your payment history will appear here</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {transactions.map((tx) => (
+                    <div
+                      key={tx.id}
+                      className={`border rounded-xl p-4 ${
+                        tx.type === 'outgoing'
+                          ? 'bg-red-50 border-red-200'
+                          : tx.type === 'receivable'
+                          ? 'bg-yellow-50 border-yellow-200'
+                          : 'bg-green-50 border-green-200'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-3">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-sm ${
+                            tx.type === 'outgoing' ? 'bg-red-500' :
+                            tx.type === 'receivable' ? 'bg-yellow-500' : 'bg-green-500'
+                          }`}>
+                            {tx.type === 'outgoing' ? '📤' :
+                             tx.type === 'receivable' ? '⏳' : '📥'}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-gray-900">
+                              {tx.type === 'outgoing' ? `Sent ${tx.currency}` :
+                               tx.type === 'receivable' ? `Receivable ${tx.currency}` :
+                               `Received ${tx.currency}`}
+                            </p>
+                            <p className="text-sm text-gray-500">{tx.timestamp}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className={`font-bold ${
+                            tx.type === 'outgoing' ? 'text-red-600' :
+                            tx.type === 'receivable' ? 'text-yellow-600' : 'text-green-600'
+                          }`}>
+                            {tx.type === 'outgoing' ? '-' : tx.type === 'receivable' ? '' : '+'}
+                            {tx.amount} {tx.currency}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {tx.type === 'outgoing' ? `To: ${tx.recipient.slice(0, 6)}...` :
+                             tx.type === 'receivable' ? 'Pending' : `From: ${tx.recipient.slice(0, 6)}...`}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="bg-white rounded-lg p-3 mt-3">
+                        <p className="text-sm text-gray-700">
+                          {tx.method === 'crypto' ? 'Transaction: ' : 'Reference: '}
+                          <span className="font-mono text-xs">{tx.txHash}</span>
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Mock transactions for demo */}
+              {transactions.length > 0 && (
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <p className="text-sm text-gray-500 mb-4">Recent Activity</p>
+                  <div className="space-y-3 opacity-60">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <p className="text-sm text-gray-700">💰 Bank Transfer +₦25,000 (Demo)</p>
+                      <p className="text-xs text-gray-500">3 days ago</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-6 text-center">
+                <p className="text-gray-500 text-sm">Real-time sync active</p>
+                <p className="text-gray-400 text-xs">Last updated: {new Date().toLocaleTimeString()}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function LandingInterface() {
+function LandingInterface({ onGetStarted }: { onGetStarted: () => void }) {
   const [currentView, setCurrentView] = useState<'landing' | 'register' | 'login'>('landing');
   const { login, register } = useAuth();
 
+  // If onGetStarted was called with login intent, go to login
+  useEffect(() => {
+    if (window.location.hash === '#login') {
+      setCurrentView('login');
+      window.location.hash = '';
+    }
+  }, []);
+
   const handleGetStarted = () => {
-    setCurrentView('register');
+    setCurrentView('login'); // Start with login for easier access
   };
 
   const handleBackToHome = () => {
@@ -499,7 +663,19 @@ function LandingInterface() {
 }
 
 function App() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
+  const [hasStarted, setHasStarted] = useState(false);
+
+  // Auto-set hasStarted when user becomes authenticated
+  useEffect(() => {
+    if (isAuthenticated && !hasStarted) {
+      setHasStarted(true);
+    }
+  }, [isAuthenticated, hasStarted]);
+
+  console.log('App render:', { isAuthenticated, isLoading, hasStarted, user });
+
+  // Removed auto-login logic to always show landing page first
 
   if (isLoading) {
     return (
@@ -512,7 +688,13 @@ function App() {
     );
   }
 
-  return isAuthenticated ? <ChatInterface /> : <LandingInterface />;
+  // Always show landing page first
+  if (!hasStarted) {
+    return <LandingInterface onGetStarted={() => setHasStarted(true)} />;
+  }
+
+  // After clicking "Get Started", show auth flow or dashboard
+  return isAuthenticated ? <ChatInterface /> : <LandingInterface onGetStarted={() => {}} />;
 }
 
 export default function Home() {

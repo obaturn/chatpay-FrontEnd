@@ -38,8 +38,8 @@ sui client faucet
 
 Your `.env.local` is already configured with:
 ```env
-NEXT_PUBLIC_CHATPAY_PACKAGE_ID=0x11b40daaa0068aa9bfa1ea493757cbb12fe6c25bc2094e287f25a3cd828e67d0
-NEXT_PUBLIC_CHATPAY_OBJECT_ID=0x6fb7883a8451f6054b7182396e7de8a4913bc09b5fbdcd279b2c0c7050a303f2
+NEXT_PUBLIC_CHATPAY_PACKAGE_ID=0xcf86d7db1cb98dbbfe169c470ab2d120688860b6daf6023de5e724b279aa46a6
+NEXT_PUBLIC_CHATPAY_OBJECT_ID=0x7546734271f7a10d5c40be476f4121ef71fc0b4309095da9180788e6f8d982e9
 NEXT_PUBLIC_SUI_NETWORK=testnet
 NEXT_PUBLIC_SUI_RPC_URL=https://fullnode.testnet.sui.io:443
 ```
@@ -123,10 +123,10 @@ open https://suiexplorer.com/txblock/[TRANSACTION_HASH]?network=testnet
 ### Check Contract State
 ```bash
 # View contract object
-sui client object 0x6fb7883a8451f6054b7182396e7de8a4913bc09b5fbdcd279b2c0c7050a303f2
+sui client object 0x7546734271f7a10d5c40be476f4121ef71fc0b4309095da9180788e6f8d982e9
 
 # View payment requests
-sui client dynamic-field 0x6fb7883a8451f6054b7182396e7de8a4913bc09b5fbdcd279b2c0c7050a303f2
+sui client dynamic-field 0x7546734271f7a10d5c40be476f4121ef71fc0b4309095da9180788e6f8d982e9
 ```
 
 ### Debug Common Issues

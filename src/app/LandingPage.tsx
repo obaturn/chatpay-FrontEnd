@@ -3,332 +3,520 @@
 import { useState } from 'react';
 
 interface LandingPageProps {
-  onGetStarted: () => void;
+  onLogin: () => void;
+  onRegister: () => void;
+  onGoogleLogin?: () => void;
 }
 
-export default function LandingPage({ onGetStarted }: LandingPageProps) {
-  const [currentSlide, setCurrentSlide] = useState(0);
+export default function LandingPage({ onLogin, onRegister, onGoogleLogin }: LandingPageProps) {
+  const [currentStep, setCurrentStep] = useState(0);
 
-  const features = [
+  const steps = [
     {
       icon: "💬",
-      title: "Real-time Messaging",
-      description: "Instant, secure messaging with end-to-end encryption. Chat with friends, family, and colleagues seamlessly.",
-      color: "from-blue-500 to-purple-600"
+      title: "Start a Conversation",
+      description: "Connect with friends and family through secure messaging"
     },
     {
       icon: "💰",
-      title: "Integrated Payments",
-      description: "Request and send payments directly through chat. No need for separate payment apps or complicated processes.",
-      color: "from-green-500 to-blue-600"
+      title: "Send Money Instantly",
+      description: "Request or send payments directly in your chat"
     },
     {
       icon: "🔒",
-      title: "Blockchain Security",
-      description: "All transactions secured by blockchain technology. Transparent, immutable, and completely secure payments.",
-      color: "from-purple-500 to-pink-600"
-    },
-    {
-      icon: "📊",
-      title: "Transaction History",
-      description: "Keep track of all your payments and transactions in one convenient location with detailed records.",
-      color: "from-indigo-500 to-purple-600"
+      title: "Bank-Grade Security",
+      description: "Your money and messages are protected by blockchain technology"
     }
   ];
 
-  const testimonials = [
-    {
-      name: "Sarah Johnson",
-      role: "Freelance Designer",
-      content: "ChatPay has revolutionized how I handle client payments. Everything happens right in the chat!",
-      avatar: "SJ"
-    },
-    {
-      name: "Mike Chen",
-      role: "Small Business Owner",
-      content: "The integrated payment system saves me so much time. No more switching between apps!",
-      avatar: "MC"
-    },
-    {
-      name: "Emma Davis",
-      role: "Digital Marketer",
-      content: "Secure, fast, and user-friendly. ChatPay is exactly what the messaging world needed.",
-      avatar: "ED"
-    }
-  ];
+  const nextStep = () => {
+    setCurrentStep((prev) => (prev + 1) % steps.length);
+  };
+
+  const prevStep = () => {
+    setCurrentStep((prev) => (prev - 1 + steps.length) % steps.length);
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-100">
-        <div className="container mx-auto px-6 py-4">
-          <nav className="flex justify-between items-center">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
-                <span className="text-white font-bold text-xl">💬</span>
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  ChatPay
-                </h1>
-                <p className="text-gray-500 text-sm">Where Conversations Meet Commerce</p>
-              </div>
+    <div className="min-h-screen bg-white">
+      {/* Navigation */}
+      <nav className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
+              <span className="text-white font-bold text-lg">₿</span>
             </div>
-            <div className="flex space-x-6">
-              <button className="text-gray-700 hover:text-blue-600 px-4 py-2 transition duration-200 font-medium">
-                Features
-              </button>
-              <button className="text-gray-700 hover:text-blue-600 px-4 py-2 transition duration-200 font-medium">
-                About
-              </button>
-              <button
-                onClick={() => {
-                  // Direct login - set hasStarted and go to login
-                  onGetStarted();
-                  setTimeout(() => {
-                    // This will be handled by the parent component
-                    window.location.hash = '#login';
-                  }, 100);
-                }}
-                className="text-gray-700 hover:text-blue-600 px-4 py-2 transition duration-200 font-medium"
-              >
-                Sign In
-              </button>
-              <button
-                onClick={onGetStarted}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-full font-semibold hover:from-blue-700 hover:to-purple-700 transition duration-200 transform hover:scale-105 shadow-md"
-              >
-                Get Started
-              </button>
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">ChatPay</h1>
+              <p className="text-xs text-gray-500">Secure Payments</p>
             </div>
-          </nav>
+          </div>
+
+          <div className="hidden md:flex items-center space-x-8">
+            <a href="#features" className="text-gray-600 hover:text-gray-900 font-medium">Features</a>
+            <a href="#security" className="text-gray-600 hover:text-gray-900 font-medium">Security</a>
+            <a href="#how-it-works" className="text-gray-600 hover:text-gray-900 font-medium">How it Works</a>
+            <a href="#support" className="text-gray-600 hover:text-gray-900 font-medium">Support</a>
+          </div>
+
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={onLogin}
+              className="text-green-600 hover:text-green-700 font-medium text-sm hidden sm:block"
+            >
+              Log in
+            </button>
+            <button
+              onClick={onRegister}
+              className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium text-sm transition duration-200"
+            >
+              Sign up
+            </button>
+          </div>
         </div>
-      </header>
+      </nav>
 
       {/* Hero Section */}
-      <section className="container mx-auto px-6 py-20">
-        <div className="text-center mb-20">
-          <div className="inline-block bg-gradient-to-r from-blue-100 to-purple-100 rounded-full px-6 py-2 mb-6">
-            <span className="text-blue-600 font-semibold text-sm">✨ New: Integrated Payments</span>
-          </div>
-          <h2 className="text-5xl md:text-6xl font-bold mb-6 leading-tight text-gray-900">
-            Chat, Pay, and
-            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"> Connect</span>
-          </h2>
-          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
-            Experience the future of communication with ChatPay - the world's first messaging platform
-            that seamlessly integrates secure payments. Send messages, request payments, and settle
-            transactions all in one beautiful, intuitive interface.
-          </p>
-          <div className="flex flex-col sm:flex-row justify-center gap-4 mb-12">
-            <button
-              onClick={onGetStarted}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-4 px-10 rounded-full text-lg transition duration-300 transform hover:scale-105 shadow-lg"
-            >
-              <span className="flex items-center space-x-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                <span>Start Your Journey</span>
-              </span>
-            </button>
-            <button className="border-2 border-gray-300 text-gray-700 hover:border-blue-600 hover:text-blue-600 font-bold py-4 px-10 rounded-full text-lg transition duration-300">
-              <span className="flex items-center space-x-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1.586a1 1 0 01.707.293l.707.707A1 1 0 0012.414 11H15m2 0h1.586a1 1 0 01.707.293l.707.707A1 1 0 0021 12.414V15m0 2a2 2 0 01-2 2h-1.586a1 1 0 01-.707-.293l-.707-.707A1 1 0 0016.586 16H15m-2 0H9.414a1 1 0 00-.707.293l-.707.707A1 1 0 007 17.586V19a2 2 0 01-2 2H4a2 2 0 01-2-2v-1.586a1 1 0 01.293-.707l.707-.707A1 1 0 014.414 15H7m2 0v-1.586a1 1 0 01.293-.707l.707-.707A1 1 0 0110.414 12H13" />
-                </svg>
-                <span>Watch Demo</span>
-              </span>
-            </button>
-          </div>
+      <section className="bg-gradient-to-br from-green-50 to-blue-50 px-6 py-20">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <h1 className="text-5xl lg:text-6xl font-bold text-gray-900 mb-6">
+                Send Money Like
+                <span className="text-green-600 block">Sending a Message</span>
+              </h1>
+              <p className="text-xl text-gray-600 mb-8 leading-relaxed">
+                ChatPay revolutionizes payments by integrating them directly into your conversations.
+                Send and receive money instantly with bank-level security powered by blockchain technology.
+              </p>
 
-          {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-            <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100 hover:shadow-xl transition duration-300">
-              <div className="text-4xl font-bold text-blue-600 mb-2">10K+</div>
-              <div className="text-gray-600 font-medium">Active Users</div>
+              <div className="flex flex-col sm:flex-row gap-4 mb-8">
+                <button
+                  onClick={onRegister}
+                  className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition duration-200 flex items-center justify-center shadow-lg"
+                >
+                  <span>Start Sending Money</span>
+                  <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+
+                {onGoogleLogin && (
+                  <button
+                    onClick={onGoogleLogin}
+                    className="border-2 border-gray-300 hover:border-gray-400 text-gray-700 px-8 py-4 rounded-lg font-semibold text-lg transition duration-200 flex items-center justify-center"
+                  >
+                    <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    Continue with Google
+                  </button>
+                )}
+              </div>
+
+              {/* Trust Indicators */}
+              <div className="flex items-center space-x-8 text-sm text-gray-600">
+                <div className="flex items-center space-x-2">
+                  <span className="text-green-600">🔒</span>
+                  <span>Bank-level security</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-green-600">⚡</span>
+                  <span>Instant transfers</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-green-600">🌍</span>
+                  <span>Global payments</span>
+                </div>
+              </div>
             </div>
-            <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100 hover:shadow-xl transition duration-300">
-              <div className="text-4xl font-bold text-purple-600 mb-2">$2M+</div>
-              <div className="text-gray-600 font-medium">Payments Processed</div>
-            </div>
-            <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100 hover:shadow-xl transition duration-300">
-              <div className="text-4xl font-bold text-green-600 mb-2">99.9%</div>
-              <div className="text-gray-600 font-medium">Uptime</div>
+
+            {/* Phone Demo - WhatsApp Payments Style */}
+            <div className="relative">
+              {/* Phone Frame */}
+              <div className="relative mx-auto w-80 h-[600px] bg-black rounded-[3rem] shadow-2xl border-4 border-black">
+                {/* Screen */}
+                <div className="w-full h-full bg-white rounded-[2.5rem] overflow-hidden">
+                  {/* Status Bar */}
+                  <div className="bg-black text-white px-6 py-1 flex justify-between items-center text-xs">
+                    <span>9:41</span>
+                    <div className="flex items-center space-x-2">
+                      <span>📶</span>
+                      <span>📶</span>
+                      <span>🔋</span>
+                    </div>
+                  </div>
+
+                  {/* WhatsApp Header */}
+                  <div className="bg-green-600 text-white px-4 py-3 flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <button className="text-white">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                      </button>
+                      <div className="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                        <span className="text-sm font-bold">A</span>
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-sm">Alice Johnson</h3>
+                        <p className="text-xs opacity-75">Online</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button className="text-white">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                        </svg>
+                      </button>
+                      <button className="text-white">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Chat Messages */}
+                  <div className="flex-1 bg-[#e5ddd5] p-4 space-y-2 overflow-y-auto" style={{height: 'calc(100% - 140px)'}}>
+                    {/* Date separator */}
+                    <div className="flex justify-center">
+                      <div className="bg-white px-3 py-1 rounded-full text-xs text-gray-500 shadow-sm">
+                        Today
+                      </div>
+                    </div>
+
+                    {/* Payment Request Message */}
+                    <div className="flex justify-start mb-4">
+                      <div className="bg-white rounded-lg px-4 py-2 max-w-xs shadow-sm">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <span className="text-lg">💰</span>
+                          <span className="font-semibold text-gray-900 text-sm">Payment</span>
+                        </div>
+                        <p className="text-sm text-gray-800 mb-2">Alice requested $50.00</p>
+                        <p className="text-xs text-gray-500 mb-3">For lunch</p>
+                        <div className="flex space-x-2">
+                          <button className="bg-green-600 text-white px-4 py-1 rounded text-xs font-medium">
+                            Pay $50.00
+                          </button>
+                          <button className="border border-gray-300 text-gray-600 px-4 py-1 rounded text-xs">
+                            Decline
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Response */}
+                    <div className="flex justify-end mb-2">
+                      <div className="bg-green-500 text-white rounded-lg px-4 py-2 max-w-xs">
+                        <p className="text-sm">Sure! Sending payment now 💳</p>
+                        <p className="text-xs opacity-75 mt-1">10:27 AM ✓✓</p>
+                      </div>
+                    </div>
+
+                    {/* Payment Success Message */}
+                    <div className="flex justify-center mb-4">
+                      <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-3 text-center max-w-sm">
+                        <div className="flex items-center justify-center space-x-2 mb-2">
+                          <div className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center">
+                            <span className="text-white text-sm">✓</span>
+                          </div>
+                          <span className="font-semibold text-green-800 text-sm">Payment Sent</span>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-1">$50.00 sent to Alice Johnson</p>
+                        <p className="text-xs text-gray-500">Transaction ID: 8ba1f109551bD432803012645ac136ddd64DBA72</p>
+                        <button className="text-green-600 text-xs font-medium mt-2 hover:underline">
+                          View details
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Thank you message */}
+                    <div className="flex justify-start">
+                      <div className="bg-white rounded-lg px-4 py-2 max-w-xs shadow-sm">
+                        <p className="text-sm text-gray-800">Thank you so much! 🙏</p>
+                        <p className="text-xs text-gray-500 mt-1">10:28 AM ✓</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Message Input */}
+                  <div className="bg-white border-t border-gray-200 px-4 py-3 flex items-center space-x-2">
+                    <button className="text-gray-400 hover:text-gray-600">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                      </svg>
+                    </button>
+                    <div className="flex-1 bg-gray-100 rounded-full px-4 py-2 flex items-center">
+                      <input
+                        type="text"
+                        placeholder="Type a message"
+                        className="flex-1 bg-transparent outline-none text-sm"
+                      />
+                      <button className="text-gray-400 hover:text-gray-600 ml-2">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1.586a1 1 0 01.707.293l.707.707A1 1 0 0012.414 11H15m2 0h1.586a1 1 0 01.707.293l.707.707A1 1 0 0021 12.414V15m0 2a2 2 0 01-2 2h-1.586a1 1 0 01-.707-.293l-.707-.707A1 1 0 0016.586 16H15m-2 0H9.414a1 1 0 00-.707.293l-.707.707A1 1 0 007 17.586V19a2 2 0 01-2 2H4a2 2 0 01-2-2v-1.586a1 1 0 01.293-.707l.707-.707A1 1 0 014.414 15H7m2 0v-1.586a1 1 0 01.293-.707l.707-.707A1 1 0 0110.414 12H13" />
+                        </svg>
+                      </button>
+                    </div>
+                    <button className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center text-white">
+                      <span className="text-sm">💰</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Home Indicator */}
+                <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 w-32 h-1 bg-white rounded-full opacity-50"></div>
+              </div>
+
+              {/* Floating Payment Badge */}
+              <div className="absolute -top-4 -right-4 bg-green-600 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
+                💸 ChatPay
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="bg-white py-20">
-        <div className="container mx-auto px-6">
+      <section id="features" className="py-20 px-6">
+        <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h3 className="text-4xl font-bold text-gray-900 mb-4">Why Choose ChatPay?</h3>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Discover the features that make ChatPay the ultimate communication and payment platform
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Why Choose ChatPay?</h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Experience the future of payments with features designed for the modern world
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {features.map((feature, index) => (
-              <div
-                key={index}
-                className="bg-gradient-to-br from-white to-gray-50 rounded-2xl p-8 shadow-lg border border-gray-100 hover:shadow-xl transition duration-300 transform hover:scale-105"
-              >
-                <div className="text-5xl mb-6">{feature.icon}</div>
-                <h4 className="text-2xl font-bold mb-4 text-gray-900">{feature.title}</h4>
-                <p className="text-gray-600 leading-relaxed">{feature.description}</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-3xl">💬</span>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Demo Section */}
-      <section className="bg-gradient-to-br from-gray-50 to-blue-50 py-20">
-        <div className="container mx-auto px-6">
-          <div className="bg-white rounded-3xl p-8 md:p-12 max-w-6xl mx-auto shadow-2xl">
-            <div className="text-center mb-12">
-              <h3 className="text-4xl font-bold text-gray-900 mb-4">See ChatPay in Action</h3>
-              <p className="text-xl text-gray-600">Watch how easy it is to chat and pay</p>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Chat Integration</h3>
+              <p className="text-gray-600">Payments happen naturally within your conversations</p>
             </div>
 
-            <div className="grid lg:grid-cols-2 gap-12 items-center">
-              <div className="bg-gray-900 rounded-2xl p-6 md:p-8 text-green-400 font-mono text-sm shadow-xl overflow-x-auto">
-                <div className="mb-4 text-yellow-300 font-bold">💬 ChatPay Conversation</div>
-                <div className="space-y-4">
-                  <div className="flex items-start space-x-3">
-                    <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-sm font-bold text-white">JD</div>
-                    <div className="flex-1">
-                      <div className="text-purple-300 text-xs mb-1">John Doe • 2:30 PM</div>
-                      <div className="text-white">Hey Sarah! The project is complete. Ready for payment? 💰</div>
-                    </div>
-                  </div>
-                  <div className="flex items-start space-x-3">
-                    <div className="w-10 h-10 bg-pink-500 rounded-full flex items-center justify-center text-sm font-bold text-white">SJ</div>
-                    <div className="flex-1">
-                      <div className="text-purple-300 text-xs mb-1">Sarah Johnson • 2:31 PM</div>
-                      <div className="text-white">Absolutely! Let me send the payment right now ✨</div>
-                    </div>
-                  </div>
-                  <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-4 my-4 text-white">
-                    <div className="font-bold mb-2 text-yellow-300">💳 Payment Request</div>
-                    <div className="text-sm">Amount: $500.00</div>
-                    <div className="text-sm">To: 0x742d...44e</div>
-                    <div className="text-green-400 mt-2 font-semibold">✅ Payment completed instantly!</div>
-                  </div>
-                  <div className="flex items-start space-x-3">
-                    <div className="w-10 h-10 bg-pink-500 rounded-full flex items-center justify-center text-sm font-bold text-white">SJ</div>
-                    <div className="flex-1">
-                      <div className="text-purple-300 text-xs mb-1">Sarah Johnson • 2:32 PM</div>
-                      <div className="text-white">Payment sent! Thanks for the great work! 🎉</div>
-                    </div>
-                  </div>
-                </div>
+            <div className="text-center">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-3xl">⚡</span>
               </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Instant Transfers</h3>
+              <p className="text-gray-600">Send money anywhere instantly, no waiting required</p>
+            </div>
 
-              <div>
-                <h4 className="text-3xl font-bold mb-6 text-gray-900">How It Works</h4>
-                <div className="space-y-6">
-                  <div className="flex items-start space-x-4">
-                    <div className="bg-blue-600 text-white w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg">1</div>
-                    <div>
-                      <h5 className="text-xl font-semibold mb-2 text-gray-900">Start a Conversation</h5>
-                      <p className="text-gray-600">Connect with anyone through our secure messaging platform</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start space-x-4">
-                    <div className="bg-purple-600 text-white w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg">2</div>
-                    <div>
-                      <h5 className="text-xl font-semibold mb-2 text-gray-900">Request or Send Payment</h5>
-                      <p className="text-gray-600">Use built-in payment features to handle transactions seamlessly</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start space-x-4">
-                    <div className="bg-green-600 text-white w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg">3</div>
-                    <div>
-                      <h5 className="text-xl font-semibold mb-2 text-gray-900">Secure Blockchain Processing</h5>
-                      <p className="text-gray-600">All payments are processed securely on the blockchain</p>
-                    </div>
-                  </div>
-                </div>
+            <div className="text-center">
+              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-3xl">🔒</span>
               </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Bank-Level Security</h3>
+              <p className="text-gray-600">Military-grade encryption protects your transactions</p>
+            </div>
+
+            <div className="text-center">
+              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-3xl">🌍</span>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Global Payments</h3>
+              <p className="text-gray-600">Send money worldwide with low fees</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="bg-white py-20">
-        <div className="container mx-auto px-6">
+      {/* How It Works */}
+      <section id="how-it-works" className="bg-gray-50 py-20 px-6">
+        <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h3 className="text-4xl font-bold text-gray-900 mb-4">What Our Users Say</h3>
-            <p className="text-xl text-gray-600">Join thousands of satisfied users worldwide</p>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">How It Works</h2>
+            <p className="text-xl text-gray-600">Getting started with ChatPay is as easy as 1-2-3</p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <div key={index} className="bg-gradient-to-br from-white to-gray-50 rounded-2xl p-8 shadow-lg border border-gray-100 hover:shadow-xl transition duration-300">
-                <div className="flex items-center mb-6">
-                  <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white font-bold mr-4">
-                    {testimonial.avatar}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="w-20 h-20 bg-green-600 text-white rounded-full flex items-center justify-center mx-auto mb-6 text-2xl font-bold">
+                1
+              </div>
+              <h3 className="text-2xl font-semibold text-gray-900 mb-4">Connect Your Wallet</h3>
+              <p className="text-gray-600">Link your Sui wallet to start sending and receiving payments securely</p>
+            </div>
+
+            <div className="text-center">
+              <div className="w-20 h-20 bg-green-600 text-white rounded-full flex items-center justify-center mx-auto mb-6 text-2xl font-bold">
+                2
+              </div>
+              <h3 className="text-2xl font-semibold text-gray-900 mb-4">Start a Conversation</h3>
+              <p className="text-gray-600">Chat with friends and family using our secure messaging platform</p>
+            </div>
+
+            <div className="text-center">
+              <div className="w-20 h-20 bg-green-600 text-white rounded-full flex items-center justify-center mx-auto mb-6 text-2xl font-bold">
+                3
+              </div>
+              <h3 className="text-2xl font-semibold text-gray-900 mb-4">Send Money Instantly</h3>
+              <p className="text-gray-600">Request or send payments directly within your chat conversations</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Security Section */}
+      <section id="security" className="py-20 px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <h2 className="text-4xl font-bold text-gray-900 mb-6">Your Security is Our Priority</h2>
+              <p className="text-xl text-gray-600 mb-8">
+                ChatPay uses cutting-edge blockchain technology and military-grade encryption
+                to ensure your money and conversations are always safe.
+              </p>
+
+              <div className="space-y-6">
+                <div className="flex items-start space-x-4">
+                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-green-600">🔐</span>
                   </div>
                   <div>
-                    <div className="font-bold text-gray-900">{testimonial.name}</div>
-                    <div className="text-gray-600 text-sm">{testimonial.role}</div>
+                    <h3 className="font-semibold text-gray-900 mb-1">End-to-End Encryption</h3>
+                    <p className="text-gray-600">All messages and payment data are encrypted from sender to receiver</p>
                   </div>
                 </div>
-                <p className="text-gray-700 italic leading-relaxed">"{testimonial.content}"</p>
+
+                <div className="flex items-start space-x-4">
+                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-green-600">🛡️</span>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-1">Blockchain Security</h3>
+                    <p className="text-gray-600">Transactions are recorded on the immutable Sui blockchain</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-4">
+                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-green-600">👤</span>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-1">Identity Verification</h3>
+                    <p className="text-gray-600">Optional KYC verification for enhanced account security</p>
+                  </div>
+                </div>
               </div>
-            ))}
+            </div>
+
+            <div className="bg-gradient-to-br from-green-50 to-blue-50 rounded-2xl p-8">
+              <div className="text-center">
+                <div className="w-20 h-20 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <span className="text-white text-3xl">🛡️</span>
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-4">Trusted by Millions</h3>
+                <p className="text-gray-600 mb-6">
+                  Join thousands of users who trust ChatPay for their daily payment needs
+                </p>
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <div className="text-2xl font-bold text-green-600">99.9%</div>
+                    <div className="text-sm text-gray-600">Uptime</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-green-600">$2M+</div>
+                    <div className="text-sm text-gray-600">Processed</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-green-600">50K+</div>
+                    <div className="text-sm text-gray-600">Users</div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="bg-gradient-to-r from-blue-600 to-purple-600 py-20">
-        <div className="container mx-auto px-6">
-          <div className="bg-white rounded-3xl p-12 text-center shadow-2xl">
-            <h3 className="text-4xl font-bold text-gray-900 mb-6">
-              Ready to Transform Your Communication?
-            </h3>
-            <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-              Join ChatPay today and experience the future of messaging and payments.
-              It's free to get started!
-            </p>
-            <button
-              onClick={onGetStarted}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-4 px-12 rounded-full text-xl transition duration-300 transform hover:scale-105 shadow-lg"
-            >
-              <span className="flex items-center space-x-2">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                <span>Get Started Now - It's Free!</span>
-              </span>
-            </button>
-          </div>
+      <section className="bg-green-600 py-20 px-6">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-4xl font-bold text-white mb-6">
+            Ready to Start Sending Money?
+          </h2>
+          <p className="text-xl text-green-100 mb-8">
+            Join ChatPay today and experience the future of payments
+          </p>
+          <button
+            onClick={onRegister}
+            className="bg-white text-green-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-50 transition duration-200 shadow-lg"
+          >
+            Get Started Now
+          </button>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
-        <div className="container mx-auto px-6">
-          <div className="border-t border-gray-700 pt-8">
-            <div className="flex flex-col md:flex-row justify-between items-center">
-              <div className="mb-4 md:mb-0">
-                <h4 className="text-2xl font-bold mb-2 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">ChatPay</h4>
-                <p className="text-gray-400">Revolutionizing digital communication and payments</p>
+      <footer id="support" className="bg-gray-900 text-white py-12 px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+            <div>
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
+                  <span className="text-white font-bold text-lg">₿</span>
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold">ChatPay</h1>
+                  <p className="text-sm text-gray-400">Secure Payments</p>
+                </div>
               </div>
-              <div className="flex space-x-6">
-                <a href="#" className="text-gray-400 hover:text-white transition duration-200">Privacy</a>
-                <a href="#" className="text-gray-400 hover:text-white transition duration-200">Terms</a>
-                <a href="#" className="text-gray-400 hover:text-white transition duration-200">Support</a>
+              <p className="text-gray-400 text-sm mb-4">
+                Send money as easily as sending a message. Secure, fast, and reliable payments powered by blockchain.
+              </p>
+              <div className="flex space-x-4">
+                <a href="#" className="text-gray-400 hover:text-white">Twitter</a>
+                <a href="#" className="text-gray-400 hover:text-white">Facebook</a>
+                <a href="#" className="text-gray-400 hover:text-white">LinkedIn</a>
               </div>
             </div>
-            <div className="text-center mt-8 text-gray-400">
+
+            <div>
+              <h3 className="font-semibold mb-4">Product</h3>
+              <ul className="space-y-2 text-sm text-gray-400">
+                <li><a href="#" className="hover:text-white">Features</a></li>
+                <li><a href="#" className="hover:text-white">Security</a></li>
+                <li><a href="#" className="hover:text-white">Pricing</a></li>
+                <li><a href="#" className="hover:text-white">API</a></li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="font-semibold mb-4">Support</h3>
+              <ul className="space-y-2 text-sm text-gray-400">
+                <li><a href="#" className="hover:text-white">Help Center</a></li>
+                <li><a href="#" className="hover:text-white">Contact Us</a></li>
+                <li><a href="#" className="hover:text-white">Status</a></li>
+                <li><a href="#" className="hover:text-white">Community</a></li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="font-semibold mb-4">Company</h3>
+              <ul className="space-y-2 text-sm text-gray-400">
+                <li><a href="#" className="hover:text-white">About</a></li>
+                <li><a href="#" className="hover:text-white">Blog</a></li>
+                <li><a href="#" className="hover:text-white">Careers</a></li>
+                <li><a href="#" className="hover:text-white">Press</a></li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center">
+            <p className="text-gray-400 text-sm">
               © 2024 ChatPay. All rights reserved.
+            </p>
+            <div className="flex space-x-6 mt-4 md:mt-0">
+              <a href="#" className="text-gray-400 hover:text-white text-sm">Privacy Policy</a>
+              <a href="#" className="text-gray-400 hover:text-white text-sm">Terms of Service</a>
+              <a href="#" className="text-gray-400 hover:text-white text-sm">Cookie Policy</a>
             </div>
           </div>
         </div>

@@ -2,6 +2,38 @@
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
+// API Response types
+interface ApiResponse<T = unknown> {
+  success: boolean;
+  data?: T;
+  message?: string;
+  error?: string;
+  token?: string;
+  user?: T;
+}
+
+// Profile data interface
+interface ProfileData {
+  displayName?: string;
+  bio?: string;
+  profilePicture?: string | null;
+  businessType?: string;
+  preferences?: {
+    notifications?: {
+      email?: boolean;
+      push?: boolean;
+    };
+  };
+}
+
+// Google login data interface
+interface GoogleLoginData {
+  code?: string;
+  email: string;
+  name?: string;
+  picture?: string;
+}
+
 class ApiService {
   private token: string | null = null;
 
@@ -22,6 +54,7 @@ class ApiService {
     localStorage.removeItem('authToken');
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async request(endpoint: string, options: RequestInit = {}): Promise<any> {
     const url = `${API_BASE_URL}${endpoint}`;
     const config: RequestInit = {
@@ -44,6 +77,15 @@ class ApiService {
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: 'Network error' }));
 
+      console.error('🚨 API Error Details:', {
+        endpoint: endpoint,
+        method: options.method || 'GET',
+        status: response.status,
+        statusText: response.statusText,
+        error: error,
+        url: url
+      });
+
       // Handle specific HTTP status codes
       if (response.status === 401) {
         // Clear invalid token on 401 Unauthorized
@@ -51,7 +93,7 @@ class ApiService {
         throw new Error('Authentication failed. Please log in again.');
       }
 
-      throw new Error(error.message || `HTTP ${response.status}: ${response.statusText}`);
+      throw new Error(error.error || error.message || `HTTP ${response.status}: ${response.statusText}`);
     }
 
     return response.json();
@@ -63,7 +105,9 @@ class ApiService {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
-    this.setToken(data.token);
+    if (data.token) {
+      this.setToken(data.token);
+    }
     return data;
   }
 
@@ -72,9 +116,12 @@ class ApiService {
       method: 'POST',
       body: JSON.stringify({ username, email, password }),
     });
-    this.setToken(data.token);
+    if (data.token) {
+      this.setToken(data.token);
+    }
     return data;
   }
+
 
   async getProfile() {
     return this.request('/auth/profile');
@@ -131,6 +178,44 @@ class ApiService {
     return this.request('/contacts', {
       method: 'POST',
       body: JSON.stringify({ userId }),
+    });
+  }
+
+  // Email verification
+  async verifyEmail(email: string, otp: string) {
+    return this.request('/auth/verify-email', {
+      method: 'POST',
+      body: JSON.stringify({ email, otp }),
+    });
+  }
+
+  async resendOTP(email: string) {
+    return this.request('/auth/resend-otp', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  async testEmail(email?: string) {
+    return this.request('/auth/test-email', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  // Google OAuth
+  async googleLogin(userData: GoogleLoginData) {
+    return this.request('/auth/google', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
+  }
+
+  // Profile management
+  async updateProfile(profileData: ProfileData) {
+    return this.request('/auth/profile', {
+      method: 'PUT',
+      body: JSON.stringify(profileData),
     });
   }
 }

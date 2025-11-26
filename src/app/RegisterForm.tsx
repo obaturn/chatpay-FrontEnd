@@ -33,8 +33,9 @@ export default function RegisterForm({ onRegister, onSwitchToLogin, onBackToHome
     setIsLoading(true);
     try {
       await onRegister(username, email, password);
-    } catch (err: any) {
-      setError(err.message || 'Registration failed');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Registration failed';
+      setError(message);
     } finally {
       setIsLoading(false);
     }

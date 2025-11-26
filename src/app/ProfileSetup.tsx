@@ -38,15 +38,26 @@ export default function ProfileSetup({ onComplete, onSkip }: ProfileSetupProps) 
 
     setIsLoading(true);
     try {
+      let profilePictureBase64: string | undefined;
+      if (profilePicture) {
+        profilePictureBase64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(profilePicture);
+        });
+      }
+
       await updateProfile({
         displayName: displayName.trim(),
         bio: bio.trim(),
         businessType: businessType || undefined,
-        profilePicture,
+        profilePicture: profilePictureBase64,
       });
       onComplete();
-    } catch (err: any) {
-      setError(err.message || 'Failed to update profile');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to update profile';
+      setError(message);
     } finally {
       setIsLoading(false);
     }

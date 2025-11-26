@@ -30,8 +30,9 @@ export default function LoginForm({
 
     try {
       await onLogin(email, password);
-    } catch (error: any) {
-      setError(error.message || 'Login failed');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Login failed';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -43,8 +44,9 @@ export default function LoginForm({
 
     try {
       await onGoogleLogin();
-    } catch (error: any) {
-      setError(error.message || 'Google login failed');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Google login failed';
+      setError(message);
     } finally {
       setGoogleLoading(false);
     }
@@ -134,7 +136,7 @@ export default function LoginForm({
 
       <div className="mt-6 text-center">
         <p className="text-sm text-gray-600">
-          Don't have an account?{' '}
+          Dont have an account?{' '}
           <button
             onClick={onSwitchToRegister}
             className="text-green-600 hover:text-green-700 font-medium"

@@ -46,17 +46,21 @@ class ChatService {
       });
 
       this.socket.on('connect', () => {
-        console.log('Connected to chat server');
+        console.log('✅ Connected to chat server with ID:', this.socket?.id);
         resolve();
       });
 
       this.socket.on('connect_error', (error) => {
-        console.error('Chat connection error:', error);
+        console.error('❌ Chat connection error:', error.message);
         reject(error);
       });
 
-      this.socket.on('disconnect', () => {
-        console.log('Disconnected from chat server');
+      this.socket.on('disconnect', (reason) => {
+        console.log('🔌 Disconnected from chat server. Reason:', reason);
+      });
+
+      this.socket.on('error', (error) => {
+        console.error('🔥 Socket error:', error);
       });
     });
   }

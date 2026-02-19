@@ -4,6 +4,7 @@ import { useAuth } from '../src/components/AuthContext';
 import ChatList from '../src/app/ChatList';
 import Message from '../src/app/Message';
 import { chatService, Message as MessageType, Chat as ChatType } from '../src/app/chatService';
+import { apiService } from '../src/components/api';
 
 export default function ChatPage() {
   const { isAuthenticated, user } = useAuth();
@@ -22,6 +23,12 @@ export default function ChatPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const formatDate = (date: Date | string | undefined) => {
+    if (!date) return '';
+    const d = typeof date === 'string' ? new Date(date) : date;
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
   useEffect(() => {
     if (!isAuthenticated) {
       router.push('/login');
@@ -36,12 +43,15 @@ export default function ChatPage() {
       setError(null);
       // Connect to chat service
       const token = localStorage.getItem('authToken');
+      console.log('🔌 Initializing chat with token:', token ? 'Token found' : 'NO TOKEN');
       if (token) {
         await chatService.connect(token);
         setIsConnected(true);
+        console.log('✅ Socket connected, loading chats...');
 
         // Load chats
         const userChats = await chatService.getChats();
+        console.log('📋 Chats loaded:', userChats.length, 'chats');
         setChats(userChats);
 
         // Set up real-time listeners
@@ -50,7 +60,7 @@ export default function ChatPage() {
         setError('Authentication token not found. Please log in again.');
       }
     } catch (error) {
-      console.error('Failed to initialize chat:', error);
+      console.error('❌ Failed to initialize chat:', error);
       setError('Failed to connect to chat server. Please check your connection and try again.');
     } finally {
       setIsLoading(false);
@@ -59,7 +69,11 @@ export default function ChatPage() {
 
   const setupRealTimeListeners = () => {
     chatService.onMessage((message) => {
-      setMessages(prev => [...prev, message]);
+      setMessages(prev => {
+        // Prevent duplicate messages
+        if (prev.some(m => m.id === message.id)) return prev;
+        return [...prev, message];
+      });
 
       // Update chat's last message
       setChats(prev => prev.map(chat =>
@@ -79,8 +93,8 @@ export default function ChatPage() {
     });
   };
 
-  const handleSelectChat = async (chatId: string) => {
-    const chat = chats.find(c => c.id === chatId);
+  const handleSelectChat = async (chatId: string, chatToSelect?: ChatType) => {
+    const chat = chatToSelect || chats.find(c => c.id === chatId);
     if (!chat) return;
 
     setSelectedChat(chat);
@@ -109,14 +123,26 @@ export default function ChatPage() {
     }
   };
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!selectedChat) return;
 
     if (selectedFile) {
       handleSendFile();
     } else if (newMessage.trim()) {
-      chatService.sendMessage(selectedChat.id, newMessage.trim());
+      const content = newMessage.trim();
       setNewMessage('');
+
+      try {
+        const sentMessage = await chatService.sendMessage(selectedChat.id, content);
+        // Append sent message immediately for guest feedback
+        setMessages(prev => {
+          if (prev.some(m => m.id === sentMessage.id)) return prev;
+          return [...prev, sentMessage];
+        });
+      } catch (err) {
+        console.error('Failed to send message:', err);
+        setError('Failed to send message. Please try again.');
+      }
     }
   };
 
@@ -172,21 +198,17 @@ export default function ChatPage() {
 
     setIsSearching(true);
     try {
-      // TODO: Replace with actual API call to search users
-      // const response = await fetch(`/api/users/search?q=${encodeURIComponent(query)}`);
-      // const users = await response.json();
-
-      // Mock search results
-      const mockUsers = [
-        { id: '1', username: 'alice', displayName: 'Alice Johnson', email: 'alice@example.com' },
-        { id: '2', username: 'bob', displayName: 'Bob Smith', email: 'bob@example.com' },
-        { id: '3', username: 'charlie', displayName: 'Charlie Brown', email: 'charlie@example.com' },
-      ].filter(user =>
-        user.username.toLowerCase().includes(query.toLowerCase()) ||
-        user.displayName.toLowerCase().includes(query.toLowerCase())
-      );
-
-      setSearchResults(mockUsers);
+      console.log('🔍 Searching for users:', query);
+      const response = await apiService.searchUsers(query);
+      console.log('📥 Search response:', response);
+      if (response.success) {
+        setSearchResults(response.users.map((u: { _id: string; username: string; displayName: string; email?: string }) => ({
+          id: u._id,
+          username: u.username,
+          displayName: u.displayName,
+          email: u.email || ''
+        })));
+      }
     } catch (error) {
       console.error('User search failed:', error);
     } finally {
@@ -197,24 +219,28 @@ export default function ChatPage() {
   const handleStartChat = async (userId: string) => {
     try {
       setError(null);
+      console.log('📝 Creating chat with user:', userId);
       const chat = await chatService.createChat([userId]);
+      console.log('✅ Chat created:', chat);
       setShowUserSearch(false);
       setUserSearchQuery('');
       setSearchResults([]);
 
       // Add to chats list
-      setChats(prev => [...prev, {
+      const newChat: ChatType = {
         id: chat.id,
         name: chat.name,
         participants: chat.participants,
         lastMessage: undefined,
         unreadCount: 0
-      }]);
+      };
 
-      // Select the new chat
-      handleSelectChat(chat.id);
+      setChats(prev => [...prev, newChat]);
+
+      // Select the new chat directly to avoid state lag
+      handleSelectChat(chat.id, newChat);
     } catch (error) {
-      console.error('Failed to create chat:', error);
+      console.error('❌ Failed to create chat:', error);
       setError('Failed to create new chat. Please try again.');
     }
   };
@@ -333,7 +359,7 @@ export default function ChatPage() {
           id: chat.id,
           name: chat.name,
           lastMessage: chat.lastMessage?.content || '',
-          timestamp: chat.lastMessage?.timestamp.toLocaleTimeString() || '',
+          timestamp: formatDate(chat.lastMessage?.timestamp),
           unreadCount: chat.unreadCount,
         }))}
         selectedChatId={selectedChat?.id || null}
@@ -370,7 +396,7 @@ export default function ChatPage() {
                   id={message.id}
                   text={message.content}
                   payment={message.payment}
-                  timestamp={message.timestamp.toLocaleTimeString()}
+                  timestamp={formatDate(message.timestamp)}
                 />
               ))}
             </div>

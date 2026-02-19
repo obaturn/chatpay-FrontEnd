@@ -65,14 +65,16 @@ class ApiService {
       ...options,
     };
 
-    if (this.token) {
+    if (this.getToken()) {
       config.headers = {
         ...config.headers,
-        Authorization: `Bearer ${this.token}`,
+        Authorization: `Bearer ${this.getToken()}`,
       };
     }
 
     const response = await fetch(url, config);
+    const method = options.method || 'GET';
+    console.log('🌐 API Request:', method, url, 'Status:', response.status);
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: 'Network error' }));
@@ -169,6 +171,25 @@ class ApiService {
     return this.request('/payments/history');
   }
 
+  // Bank Transfers
+  async getBanks() {
+    return this.request('/payments/banks');
+  }
+
+  async resolveAccount(accountNumber: string, bankCode: string) {
+    return this.request('/payments/resolve-account', {
+      method: 'POST',
+      body: JSON.stringify({ accountNumber, bankCode }),
+    });
+  }
+
+  async withdraw(amount: number, accountNumber: string, bankCode: string, accountName: string, reason?: string) {
+    return this.request('/payments/withdraw', {
+      method: 'POST',
+      body: JSON.stringify({ amount, accountNumber, bankCode, accountName, reason }),
+    });
+  }
+
   // Contacts
   async getContacts() {
     return this.request('/contacts');
@@ -205,10 +226,27 @@ class ApiService {
 
   // Google OAuth
   async googleLogin(userData: GoogleLoginData) {
-    return this.request('/auth/google', {
+    const data = await this.request('/auth/google', {
       method: 'POST',
       body: JSON.stringify(userData),
     });
+    if (data.token) {
+      this.setToken(data.token);
+    }
+    return data;
+  }
+
+  // ZK Login
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async zkLogin(zkProof: any) {
+    const data = await this.request('/auth/zk-login', {
+      method: 'POST',
+      body: JSON.stringify({ zkProof }),
+    });
+    if (data.token) {
+      this.setToken(data.token);
+    }
+    return data;
   }
 
   // Profile management
@@ -217,6 +255,14 @@ class ApiService {
       method: 'PUT',
       body: JSON.stringify(profileData),
     });
+  }
+  // User Search
+  async searchUsers(query: string) {
+    return this.request(`/users/search?q=${encodeURIComponent(query)}`);
+  }
+
+  async getUserByUsername(username: string) {
+    return this.request(`/users/u/${username}`);
   }
 }
 

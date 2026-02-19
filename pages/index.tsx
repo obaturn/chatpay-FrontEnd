@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../src/components/AuthContext';
 import LandingPage from '@/app/LandingPage';
 import LoginForm from '@/components/LoginForm';
@@ -8,8 +8,10 @@ import RegisterForm from '@/app/RegisterForm';
 import ChatList from '@/app/ChatList';
 import Message from '@/app/Message';
 import PaymentDrawer from '@/app/PaymentDrawer';
+import WithdrawModal from '@/components/WithdrawModal';
 import ProfileSetup from '@/app/ProfileSetup';
 import EmailVerification from '@/app/EmailVerification';
+import NewChatModal from '@/components/NewChatModal';
 import { apiService } from '../src/components/api';
 import { chatService, Message as MessageType, Chat as ChatType } from '../src/app/chatService';
 import { useCurrentAccount, useWallets, useConnectWallet, useSignTransaction } from '@mysten/dapp-kit';
@@ -162,13 +164,61 @@ function ChatInterface() {
 
   const [newMessage, setNewMessage] = useState('');
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
+  const [newChatModalOpen, setNewChatModalOpen] = useState(false);
   const [drawerType, setDrawerType] = useState<'request' | 'paid' | 'send'>('request');
+
+  const handleStartChat = async (userId: string) => {
+    try {
+      console.log('📝 handleStartChat called with userId:', userId);
+      
+      // Check if chat already exists
+      const existingChat = chats.find(c =>
+        // This is a simplification. Ideally, backend should handle "get or create" logic
+        false
+      );
+
+      if (existingChat) {
+        setSelectedChatId(existingChat.id);
+        return;
+      }
+
+      // Create new chat
+      console.log('🔄 Creating new chat with participants:', [userId]);
+      const newChat = await apiService.createChat([userId], 'direct');
+      console.log('📡 createChat response:', newChat);
+      
+      if (newChat && newChat.success) {
+        console.log('✅ Chat created successfully!');
+        // Refresh chats list
+        const userChats = await chatService.getChats();
+        setChats(userChats || []);
+        // Select the new chat
+        if (newChat.chat && newChat.chat.id) {
+          setSelectedChatId(newChat.chat.id);
+          // Join the new chat room
+          chatService.joinChat(newChat.chat.id);
+          // Load messages for the new chat
+          const chatMessages = await chatService.getMessages(newChat.chat.id);
+          setMessages(chatMessages || []);
+        }
+      } else {
+        console.error('❌ Chat creation failed:', newChat);
+        alert('Failed to create chat. Please try again.');
+      }
+    } catch (error) {
+      console.error('❌ Failed to start chat:', error);
+      alert('Failed to start chat. Please try again.');
+    }
+  };
 
   const handleSendMessage = async () => {
     if (newMessage.trim() && selectedChatId) {
+      console.log('📤 Sending message:', newMessage.trim(), 'to chat:', selectedChatId);
       try {
         await chatService.sendMessage(selectedChatId, newMessage.trim());
         setNewMessage('');
+        console.log('✅ Message sent successfully');
       } catch (error) {
         console.error('Failed to send message:', error);
         // Could show a toast notification here
@@ -227,12 +277,12 @@ function ChatInterface() {
           id: chat.id,
           name: chat.name,
           lastMessage: chat.lastMessage?.content || '',
-          timestamp: chat.lastMessage?.timestamp.toLocaleTimeString() || '',
+          timestamp: chat.lastMessage?.timestamp ? new Date(chat.lastMessage.timestamp).toLocaleTimeString() : '',
           unreadCount: chat.unreadCount,
         }))}
         selectedChatId={selectedChatId}
         onSelectChat={handleSelectChat}
-        onNewChat={() => console.log('New chat - to be implemented')}
+        onNewChat={() => setNewChatModalOpen(true)}
       />
 
       {/* Chat Area */}
@@ -331,7 +381,7 @@ function ChatInterface() {
                     id={msg.id}
                     text={msg.content}
                     payment={msg.payment}
-                    timestamp={msg.timestamp.toLocaleTimeString()}
+                    timestamp={msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString() : ''}
                   />
                 ))
               )}
@@ -383,6 +433,14 @@ function ChatInterface() {
                   Request
                 </button>
 
+                <button
+                  onClick={() => setWithdrawModalOpen(true)}
+                  className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-full transition duration-200"
+                  title="Withdraw to Bank"
+                >
+                  Withdraw
+                </button>
+
                 {/* Send Message Button */}
                 <button
                   onClick={handleSendMessage}
@@ -416,6 +474,21 @@ function ChatInterface() {
         }}
       />
 
+      <WithdrawModal
+        isOpen={withdrawModalOpen}
+        onClose={() => setWithdrawModalOpen(false)}
+        onSuccess={() => {
+          console.log('Withdrawal completed');
+          // Optionally refresh balance here
+        }}
+      />
+
+      <NewChatModal
+        isOpen={newChatModalOpen}
+        onClose={() => setNewChatModalOpen(false)}
+        onStartChat={handleStartChat}
+      />
+
     </div>
   );
 }
@@ -430,32 +503,74 @@ function LandingInterface({ onGetStarted }: { onGetStarted: () => void }) {
   const getInitialView = () => {
     if (typeof window !== 'undefined') {
       const pendingSetup = localStorage.getItem('pendingProfileSetup');
+      // Only respect the flag if we actually have a user, otherwise it's a stale flag
       if (pendingSetup === 'true') {
-        console.log('🔄 Found pending profile setup flag, starting with profile-setup view');
-        return 'profile-setup' as const;
+        // We can't easily check 'user' here as it might not be loaded yet, 
+        // but we will rely on the useEffect below to correct us if we are wrong.
+        // However, if we aren't even logged in according to our own state derived in render (which might be too early),
+        // it's safer to default to landing if we are unsure.
+        // Better approach: Let the effect handle the redirect, default to landing.
+        console.log('🔄 Found pending profile setup flag, but verified availability in effect');
+        return 'landing' as const;
       }
     }
     return 'landing' as const;
   };
 
-  const [currentViewState, setCurrentViewState] = useState<'landing' | 'register' | 'login' | 'verify-email' | 'profile-setup'>(getInitialView());
+  const [currentViewState, setCurrentViewState] = useState<'landing' | 'register' | 'login' | 'verify-email' | 'profile-setup'>('landing');
+  const hasRestoredView = useRef(false);
 
-  // Track authentication state changes
+  // Initialize view from sessionStorage on mount
   useEffect(() => {
-    if (isAuthenticated) {
-      setWasAuthenticated(true);
-    } else if (wasAuthenticated && !isAuthenticated) {
-      // User became unauthenticated after being authenticated (token expired)
-      console.log('🔐 User became unauthenticated (token expired), resetting to landing');
+    if (typeof window !== 'undefined' && !hasRestoredView.current) {
+      const savedView = sessionStorage.getItem('chatpay_view_state');
+      // Validate saved view
+      if (savedView && ['landing', 'register', 'login', 'verify-email', 'profile-setup'].includes(savedView)) {
+        console.log('🔄 Restoring saved view state:', savedView);
+        // We only restore if NOT authenticated, as auth effect will handle the rest
+        if (!isAuthenticated) {
+          setCurrentViewState(savedView as 'landing' | 'register' | 'login' | 'verify-email' | 'profile-setup');
+        }
+      }
+      hasRestoredView.current = true;
+    }
+  }, [isAuthenticated]);
+
+  // Save view to sessionStorage whenever it changes, BUT only after we have restored once
+  useEffect(() => {
+    if (typeof window !== 'undefined' && hasRestoredView.current) {
+      sessionStorage.setItem('chatpay_view_state', currentViewState);
+    }
+  }, [currentViewState]);
+
+  // Track authentication state changes and handle redirects
+  useEffect(() => {
+    // 1. If we are authenticated but have no display name, go to profile setup
+    if (isAuthenticated && user && !user.displayName) {
+      console.log('🔄 User authenticated but missing profile, redirecting to setup');
+      setCurrentViewState('profile-setup');
+      return;
+    }
+
+    // 2. If we have the pending flag, check if we should be here
+    const pendingSetup = typeof window !== 'undefined' ? localStorage.getItem('pendingProfileSetup') : null;
+    if (pendingSetup === 'true' && isAuthenticated && user) {
+      console.log('🔄 Pending setup flag found for authenticated user');
+      setCurrentViewState('profile-setup');
+    }
+
+    // 3. If we became unauthenticated, reset everything
+    if (!isAuthenticated && wasAuthenticated) {
+      console.log('🔐 User logged out, resetting view');
       setCurrentViewState('landing');
       setPendingUser(null);
-
-      // Clear any pending flags
       if (typeof window !== 'undefined') {
         localStorage.removeItem('pendingProfileSetup');
       }
+    } else if (isAuthenticated) {
+      setWasAuthenticated(true);
     }
-  }, [isAuthenticated, wasAuthenticated]);
+  }, [isAuthenticated, user, wasAuthenticated]);
 
   // Auto-redirect to profile setup when user becomes authenticated but doesn't have displayName
   useEffect(() => {
@@ -663,11 +778,13 @@ function App() {
       currentOnboardingState: hasCompletedOnboarding
     });
 
-    if (user && user.isVerified && user.displayName) {
-      console.log('✅ User has complete profile, setting hasCompletedOnboarding to true');
+    // Relaxed check: heavily rely on displayName. 
+    // isVerified might be false/undefined for new users if email verification isn't enforced strictly yet.
+    if (user && user.displayName) {
+      console.log('✅ User has complete profile (displayName present), setting hasCompletedOnboarding to true');
       setHasCompletedOnboarding(true);
     } else {
-      console.log('❌ User needs profile setup, staying on auth flow');
+      console.log('❌ User needs profile setup (missing displayName), staying on auth flow');
       setHasCompletedOnboarding(false);
     }
   }, [user, hasCompletedOnboarding]);

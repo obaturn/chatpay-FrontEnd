@@ -279,6 +279,67 @@ class PaymentService {
 
     return (amount / fromRate) * toRate;
   }
+
+  // Initialize Paystack payment (fiat)
+  async initializePayment(
+    recipientId: string,
+    amount: number,
+    description: string
+  ): Promise<{
+    success: boolean;
+    transactionId?: string;
+    authorizationUrl?: string;
+    message?: string;
+  }> {
+    try {
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+      const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+
+      if (!token) {
+        return {
+          success: false,
+          message: 'Authentication required. Please log in.',
+        };
+      }
+
+      const response = await fetch(`${API_BASE_URL}/payments/initialize`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          recipientId,
+          amount,
+          currency: 'NGN',
+          description,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        return {
+          success: false,
+          message: errorData.error || errorData.message || 'Failed to initialize payment',
+        };
+      }
+
+      const data = await response.json();
+
+      return {
+        success: data.success,
+        transactionId: data.transactionId,
+        authorizationUrl: data.authorizationUrl,
+        message: data.message,
+      };
+    } catch (error) {
+      console.error('Initialize payment failed:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to initialize payment',
+      };
+    }
+  }
 }
 
 export const paymentService = new PaymentService();

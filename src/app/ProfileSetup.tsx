@@ -84,7 +84,22 @@ export default function ProfileSetup({ onComplete, onSkip }: ProfileSetupProps) 
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Complete Your Profile</h1>
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-bold text-gray-900">Complete Your Profile</h1>
+            <button
+              onClick={() => {
+                // Clear everything and reload to hit the new index.tsx logic
+                if (typeof window !== 'undefined') {
+                  localStorage.removeItem('pendingProfileSetup');
+                  localStorage.removeItem('authToken');
+                  window.location.href = '/';
+                }
+              }}
+              className="text-sm text-red-600 hover:text-red-800"
+            >
+              Logout/Cancel
+            </button>
+          </div>
           <p className="text-gray-600">Tell us a bit about yourself</p>
         </div>
 

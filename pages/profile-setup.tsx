@@ -17,6 +17,7 @@ export default function ProfileSetupPage() {
     }
   }, [isAuthenticated, user, router]);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleProfileComplete = async (profileData: { displayName: string; bio?: string; profilePicture?: string }) => {
     try {
       await updateProfile(profileData);

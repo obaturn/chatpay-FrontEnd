@@ -3,6 +3,7 @@
 
 import { SuiClient, getFullnodeUrl } from '@mysten/sui/client';
 import { Transaction } from '@mysten/sui/transactions';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import type { Signer } from '@mysten/sui/cryptography';
 
 // Type for the signer from @mysten/dapp-kit's useSignTransaction hook

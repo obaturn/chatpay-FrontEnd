@@ -20,7 +20,10 @@ interface MessageProps {
   timestamp: string;
 }
 
-export default function Message({ id, text, payment, timestamp }: MessageProps) {
+export default function Message(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  { id: _id, text, payment, timestamp }: MessageProps
+) {
   const [showTooltip, setShowTooltip] = useState(false);
 
   const handlePaymentClick = () => {

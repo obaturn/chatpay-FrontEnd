@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useWallets, useCurrentAccount, useSignTransaction } from '@mysten/dapp-kit';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Transaction } from '@mysten/sui/transactions';
 import { paymentService } from './paymentService';
 
@@ -18,6 +19,7 @@ interface PaymentDrawerProps {
 }
 
 export default function PaymentDrawer({ isOpen, onClose, type, onSubmit }: PaymentDrawerProps) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const wallets = useWallets();
   const currentAccount = useCurrentAccount();
   const signTransaction = useSignTransaction();

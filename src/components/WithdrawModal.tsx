@@ -35,13 +35,13 @@ export default function WithdrawModal({ isOpen, onClose, onSuccess }: WithdrawMo
             setStep(1);
             setError(null);
         }
-    }, [isOpen]);
+    }, [isOpen, setError]);
 
     useEffect(() => {
         if (accountNumber.length === 10 && selectedBankCode) {
             resolveAccount(accountNumber, selectedBankCode);
         }
-    }, [accountNumber, selectedBankCode]);
+    }, [accountNumber, selectedBankCode, resolveAccount]);
 
     const handleNext = () => {
         if (!amount || !selectedBankCode || !resolvedAccount) return;
@@ -97,7 +97,7 @@ export default function WithdrawModal({ isOpen, onClose, onSuccess }: WithdrawMo
                                             disabled={isLoadingBanks}
                                         >
                                             <option value="">Select a bank</option>
-                                            {banks.map((bank: any) => (
+                                            {banks.map((bank) => (
                                                 <option key={bank.code} value={bank.code}>
                                                     {bank.name}
                                                 </option>

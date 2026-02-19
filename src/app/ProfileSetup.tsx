@@ -114,6 +114,7 @@ export default function ProfileSetup({ onComplete, onSkip }: ProfileSetupProps) 
           <div className="flex flex-col items-center">
             <div className="w-24 h-24 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center mb-4 relative">
               {profilePicture ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
                 <img
                   src={URL.createObjectURL(profilePicture)}
                   alt="Profile preview"

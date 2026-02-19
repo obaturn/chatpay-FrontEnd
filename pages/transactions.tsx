@@ -29,7 +29,7 @@ export default function TransactionsPage() {
     }
 
     loadTransactions();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, router]);
 
   const loadTransactions = async () => {
     try {

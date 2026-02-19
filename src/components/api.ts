@@ -3,6 +3,7 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 // API Response types
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;

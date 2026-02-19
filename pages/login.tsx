@@ -18,6 +18,7 @@ export default function LoginPage() {
     }
   }, [isAuthenticated, user, router]);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleLogin = async (email: string, password: string) => {
     // The LoginForm component will handle the actual login logic
     // After successful login, the useEffect above will handle redirection

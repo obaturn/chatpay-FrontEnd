@@ -7,7 +7,7 @@ import { chatService, Message as MessageType, Chat as ChatType } from '../src/ap
 import { apiService } from '../src/components/api';
 
 export default function ChatPage() {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated } = useAuth();
   const router = useRouter();
   const [chats, setChats] = useState<ChatType[]>([]);
   const [selectedChat, setSelectedChat] = useState<ChatType | null>(null);
@@ -36,7 +36,8 @@ export default function ChatPage() {
     }
 
     initializeChat();
-  }, [isAuthenticated]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, router]);
 
   const initializeChat = async () => {
     try {

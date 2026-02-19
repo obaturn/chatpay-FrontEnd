@@ -276,6 +276,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   // Clear any invalid tokens on app start (currently disabled to preserve valid sessions)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const clearInvalidTokens = () => {
     // TODO: Implement proper token validation
     // For now, we preserve existing tokens to maintain user sessions

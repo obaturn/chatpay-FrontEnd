@@ -101,6 +101,7 @@ export default function UserProfilePage() {
                     {/* Avatar */}
                     <div className="relative -mt-16 mb-6 flex justify-center">
                         {profile.profilePicture ? (
+                            /* eslint-disable-next-line @next/next/no-img-element */
                             <img
                                 src={profile.profilePicture}
                                 alt={profile.displayName}

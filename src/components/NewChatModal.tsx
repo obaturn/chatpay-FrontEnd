@@ -113,13 +113,14 @@ export default function NewChatModal({ isOpen, onClose, onStartChat }: NewChatMo
                                             data-user-id={result._id}
                                             data-user-name={result.displayName}
                                             style={{ padding: '12px', borderBottom: '1px solid #eee', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-                                            onClick={(e) => {
+                                            onClick={() => {
                                                 console.log('🔔 Row clicked!', result._id);
                                                 alert('Click detected for ' + result.displayName);
                                             }}
                                         >
                                             <div className="flex items-center space-x-3">
                                                 {result.profilePicture ? (
+                                                    /* eslint-disable-next-line @next/next/no-img-element */
                                                     <img src={result.profilePicture} alt={result.username} className="w-10 h-10 rounded-full object-cover" />
                                                 ) : (
                                                     <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-bold">

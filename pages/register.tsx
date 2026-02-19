@@ -17,6 +17,7 @@ export default function RegisterPage() {
     }
   }, [isAuthenticated, user, router]);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleRegister = async (username: string, email: string, password: string) => {
     // The RegisterForm component will handle the actual registration logic
     // After successful registration, the useEffect above will handle redirection

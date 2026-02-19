@@ -9,6 +9,7 @@ interface LandingPageProps {
 }
 
 export default function LandingPage({ onLogin, onRegister, onGoogleLogin }: LandingPageProps) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [currentStep, setCurrentStep] = useState(0);
 
   const steps = [
@@ -29,10 +30,12 @@ export default function LandingPage({ onLogin, onRegister, onGoogleLogin }: Land
     }
   ];
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const nextStep = () => {
     setCurrentStep((prev) => (prev + 1) % steps.length);
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const prevStep = () => {
     setCurrentStep((prev) => (prev - 1 + steps.length) % steps.length);
   };

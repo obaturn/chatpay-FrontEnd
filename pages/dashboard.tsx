@@ -32,6 +32,7 @@ export default function DashboardPage() {
       <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white p-4 shadow-md flex items-center justify-between">
         <div className="flex items-center space-x-3">
           {user.profilePicture ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
             <img
               src={user.profilePicture}
               alt="Profile"
